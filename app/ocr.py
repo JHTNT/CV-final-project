@@ -32,7 +32,7 @@ def _get_ocr():
         use_doc_orientation_classify=False,
         use_doc_unwarping=False,
         use_textline_orientation=False,
-        lang=os.getenv("OCR_LANG", "ch_tra"),
+        lang=os.getenv("OCR_LANG", "ch"),
     )
 
 

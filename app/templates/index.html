@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Food Ingredient OCR Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      /* Modern Bright Palette */
+      --bg-grad: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                 radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                 radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+      
+      --bg-color: #f8fafc;
+      --card-bg: rgba(255, 255, 255, 0.75);
+      --card-border: rgba(255, 255, 255, 0.8);
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      
+      --radius: 20px;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg-color: #0f172a;
+        --card-bg: rgba(30, 41, 59, 0.7);
+        --card-border: rgba(255, 255, 255, 0.1);
+        --text-main: #f1f5f9;
+        --text-muted: #94a3b8;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      color: var(--text-main);
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08), transparent 25%);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    @media (min-width: 1536px) {
+      .container { max-width: 1600px; }
+    }
+
+    @media (min-width: 1920px) {
+      .container { max-width: 1760px; }
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .sub {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* Layout Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (min-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 420px 1fr;
+      }
+    }
+
+    @media (min-width: 1440px) {
+      .main-grid {
+        grid-template-columns: 460px 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .card h2 {
+      font-size: 13px;
+      margin: 0 0 16px;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h2::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--card-border);
+      opacity: 0.5;
+    }
+
+    /* Upload Section */
+    .upload-area {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    input[type=file] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px dashed rgba(148, 163, 184, 0.4);
+      background: rgba(255,255,255,0.5);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    input[type=file]:hover {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    @media (prefers-color-scheme: dark) {
+      input[type=file] { background: rgba(0,0,0,0.2); }
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 20px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.8);
+      color: var(--text-main);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .btn-secondary:hover {
+      background: #fff;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .btn-secondary {
+        background: rgba(255,255,255,0.05);
+        color: white;
+        border-color: rgba(255,255,255,0.1);
+      }
+      .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .preview-container {
+      margin-top: 16px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(0,0,0,0.03);
+      border: 1px solid rgba(0,0,0,0.05);
+      min-height: 200px;
+      display: grid;
+      place-items: center;
+    }
+    .preview-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .preview-empty {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .status-banner {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+    }
+    .status-banner.ok { background: rgba(16, 185, 129, 0.15); color: #065f46; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .status-banner.warn { background: rgba(245, 158, 11, 0.15); color: #92400e; border: 1px solid rgba(245, 158, 11, 0.2); }
+    .status-banner.bad { background: rgba(239, 68, 68, 0.15); color: #991b1b; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+    @media (prefers-color-scheme: dark) {
+      .status-banner.ok { color: #6ee7b7; }
+      .status-banner.warn { color: #fcd34d; }
+      .status-banner.bad { color: #fca5a5; }
+    }
+
+    /* Results Layout */
+    .results-split {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 1024px) {
+      .results-split {
+        grid-template-columns: minmax(420px, 0.95fr) 1.25fr;
+        gap: 28px;
+      }
+    }
+
+    @media (min-width: 1440px) {
+      .results-split {
+        grid-template-columns: minmax(480px, 1fr) 1.4fr;
+      }
+    }
+
+    .col-left {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .col-right {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 768px) {
+      .col-right {
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+    }
+
+    .col-right .span-2 {
+      grid-column: 1 / -1;
+    }
+
+    /* Section Styling */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: inline-block;
+      position: relative;
+    }
+    
+    .section-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: rgba(0,0,0,0.05);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Notes Box */
+    .notes-box {
+      background: rgba(245, 158, 11, 0.08); /* Warm background for notes */
+      border: 1px solid rgba(245, 158, 11, 0.15);
+      border-radius: 16px;
+      padding: 16px 20px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .notes-box { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.2); }
+    }
+
+    /* OCR Textarea */
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.1);
+      background: rgba(255,255,255,0.5);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    @media (prefers-color-scheme: dark) {
+      textarea { background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1); }
+    }
+
+    #ocrText {
+      min-height: 520px;
+    }
+
+    @media (max-width: 767px) {
+      #ocrText {
+        min-height: 360px;
+      }
+    }
+
+    /* Clean Bullet Lists */
+    ul.clean-list {
+      margin: 0;
+      padding-left: 20px;
+      list-style-type: disc;
+    }
+    
+    ul.clean-list li {
+      margin-bottom: 6px;
+      padding-left: 4px;
+    }
+    
+    /* Specific list colors markers */
+    #ingredients li::marker { color: var(--primary); }
+    #allergens li::marker { color: var(--danger); }
+    #notes li::marker { color: var(--warning); }
+
+    /* Simple key-value blocks */
+    .kv {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 8px 12px;
+      font-size: 14px;
+    }
+    .kv .k {
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .kv .v {
+      color: var(--text-main);
+      word-break: break-word;
+    }
+    .muted {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin: 10px 0 0;
+    }
+
+    /* Risk / warning pills (use existing theme tokens) */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: rgba(0,0,0,0.04);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .pill.ok {
+      background: rgba(16, 185, 129, 0.14);
+      border-color: rgba(16, 185, 129, 0.22);
+      color: var(--success);
+    }
+    .pill.warn {
+      background: rgba(245, 158, 11, 0.14);
+      border-color: rgba(245, 158, 11, 0.22);
+      color: var(--warning);
+    }
+    .pill.bad {
+      background: rgba(239, 68, 68, 0.14);
+      border-color: rgba(239, 68, 68, 0.22);
+      color: var(--danger);
+    }
+
+    .empty-text {
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: 14px;
+      list-style: none !important;
+      margin-left: -20px; /* Pull back to align with left edge */
+    }
+
+    /* Table */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th {
+      background: rgba(0,0,0,0.03);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 12px 16px;
+      border-top: 1px solid rgba(0,0,0,0.04);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>食品成分 AI 分析</h1>
+      <div class="sub">上傳食品標示圖片，透過 OCR 與 LLM 自動結構化成分、過敏原與添加物。</div>
+    </header>
+
+    <div class="main-grid">
+      <section class="card">
+        <h2><span style="font-size: 16px;">📷</span> 圖片上傳</h2>
+        
+        <div class="upload-area">
+          <input id="file" type="file" accept="image/*" />
+          
+          <div class="btn-group">
+            <button id="btnAnalyze" class="btn btn-primary" disabled>上傳並分析</button>
+            <button id="btnClear" class="btn btn-secondary" type="button">清除重設</button>
+          </div>
+
+          <div id="banner" class="status-banner"></div>
+
+          <div class="preview-container" id="preview">
+            <div class="preview-empty" id="previewEmpty">預覽區域</div>
+            <img id="previewImg" alt="preview" style="display: none" />
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span style="font-size: 16px;">✨</span> 分析結果</h2>
+        
+        <div class="results-split">
+          
+          <div class="col-left">
+            <div class="notes-box">
+              <div class="section-header">
+                <span class="section-title">健康分析摘要</span>
+                <span class="section-badge">AI</span>
+              </div>
+              <div class="kv" aria-label="health-meta">
+                <div class="k">素別</div>
+                <div class="v">
+                  <span id="dietaryCategory">尚無資料</span>
+                  <span id="dietaryCategoryPill" class="pill" style="margin-left: 8px; display: none;"></span>
+                </div>
+                <div class="k">依據</div>
+                <div class="v" id="dietaryReason">尚無資料</div>
+              </div>
+              <p id="overallSummary" class="muted">尚無資料</p>
+            </div>
+
+            <div class="notes-box">
+              <div class="section-header">
+                <span class="section-title">AI 筆記 / 注意事項</span>
+                <span class="section-badge">LLM</span>
+              </div>
+              <ul id="notes" class="clean-list">
+                <li class="empty-text">尚無資料</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="col-right">
+            <div class="span-2">
+              <div class="section-header">
+                <span class="section-title">添加物警示（紅 / 黃 / 綠燈）</span>
+              </div>
+              <div class="table-container">
+                <table aria-label="additives-alerts">
+                  <thead>
+                    <tr><th style="width: 28%">名稱</th><th style="width: 18%">風險</th><th>說明</th></tr>
+                  </thead>
+                  <tbody id="additivesAlerts">
+                    <tr><td colspan="3" class="empty-text" style="text-align:center; padding: 20px;">尚無資料</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-header">
+                <span class="section-title">營養與熱量建議</span>
+              </div>
+              <div class="kv" aria-label="nutrition-analysis">
+                <div class="k">營養標示</div>
+                <div class="v" id="nutritionDetected">尚無資料</div>
+                <div class="k">熱量</div>
+                <div class="v" id="caloriesPerServing">尚無資料</div>
+                <div class="k">鈉警告</div>
+                <div class="v"><span id="sodiumWarning" class="pill">尚無資料</span></div>
+                <div class="k">糖警告</div>
+                <div class="v"><span id="sugarWarning" class="pill">尚無資料</span></div>
+              </div>
+              <p id="nutritionAdvice" class="muted">尚無資料</p>
+            </div>
+            
+            <div>
+              <div class="section-header">
+                <span class="section-title">主要成分</span>
+              </div>
+              <ul id="ingredients" class="clean-list">
+                <li class="empty-text">尚無資料</li>
+              </ul>
+            </div>
+
+            <div>
+              <div class="section-header" style="color: var(--danger)">
+                <span class="section-title">過敏原警示</span>
+              </div>
+              <ul id="allergens" class="clean-list">
+                <li class="empty-text">尚無資料</li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+
+        <details class="notes-box" style="margin-top: 20px;">
+          <summary class="section-header" style="cursor: pointer; user-select: none; margin-bottom: 0;">
+            <span class="section-title">原始識別文字（點擊展開）</span>
+            <span class="section-badge">OCR</span>
+          </summary>
+          <div style="margin-top: 12px;">
+            <textarea id="ocrText" placeholder="系統辨識到的原始文字將顯示於此..." readonly></textarea>
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+    const file = el('file');
+    const btnAnalyze = el('btnAnalyze');
+    const btnClear = el('btnClear');
+    const banner = el('banner');
+    const previewImg = el('previewImg');
+    const previewEmpty = el('previewEmpty');
+    const ocrText = el('ocrText');
+    const ingredients = el('ingredients');
+    const allergens = el('allergens');
+    const notes = el('notes');
+    const additives = el('additives');
+
+    // New-format fields
+    const dietaryCategory = el('dietaryCategory');
+    const dietaryCategoryPill = el('dietaryCategoryPill');
+    const dietaryReason = el('dietaryReason');
+    const overallSummary = el('overallSummary');
+    const additivesAlerts = el('additivesAlerts');
+    const nutritionDetected = el('nutritionDetected');
+    const caloriesPerServing = el('caloriesPerServing');
+    const sodiumWarning = el('sodiumWarning');
+    const sugarWarning = el('sugarWarning');
+    const nutritionAdvice = el('nutritionAdvice');
+
+    const setBanner = (kind, msg) => {
+      banner.className = 'status-banner ' + (kind || '');
+      banner.textContent = msg || '';
+      banner.style.display = msg ? 'block' : 'none';
+    };
+
+    const setLoading = (loading) => {
+      btnAnalyze.disabled = loading || !file.files || file.files.length === 0;
+      btnClear.disabled = loading;
+      file.disabled = loading;
+      btnAnalyze.textContent = loading ? '分析中...' : '上傳並分析';
+      btnAnalyze.style.opacity = loading ? '0.7' : '1';
+    };
+
+    const clearList = (ul) => {
+      ul.innerHTML = '<li class="empty-text">尚無資料</li>';
+    };
+
+    const clearAdditives = () => {
+      if (!additives) return;
+      additives.innerHTML = '<tr><td colspan="2" class="empty-text" style="text-align:center; padding: 20px;">尚無資料</td></tr>';
+    };
+
+    const clearAdditivesAlerts = () => {
+      additivesAlerts.innerHTML = '<tr><td colspan="3" class="empty-text" style="text-align:center; padding: 20px;">尚無資料</td></tr>';
+    };
+
+    const setText = (node, value, emptyText = '尚無資料') => {
+      if (!node) return;
+      const v = (value === null || value === undefined) ? '' : String(value).trim();
+      node.textContent = v ? v : emptyText;
+    };
+
+    const setPill = (node, kind, label) => {
+      if (!node) return;
+      node.className = 'pill' + (kind ? (' ' + kind) : '');
+      node.textContent = label;
+    };
+
+    const normalizeRisk = (riskLevel) => {
+      const s = (riskLevel ?? '').toString();
+      if (/^\s*high/i.test(s) || /紅燈/.test(s)) return { kind: 'bad', label: 'High' };
+      if (/^\s*medium/i.test(s) || /黃燈/.test(s)) return { kind: 'warn', label: 'Medium' };
+      if (/^\s*low/i.test(s) || /綠燈/.test(s)) return { kind: 'ok', label: 'Low' };
+      return { kind: '', label: s ? s : '未知' };
+    };
+
+    const renderList = (ul, arr) => {
+      if (!Array.isArray(arr) || arr.length === 0) {
+        clearList(ul);
+        return;
+      }
+      ul.innerHTML = '';
+      for (const item of arr) {
+        const li = document.createElement('li');
+        li.textContent = String(item);
+        ul.appendChild(li);
+      }
+    };
+
+    const renderAdditives = (arr) => {
+      if (!additives) return;
+      if (!Array.isArray(arr) || arr.length === 0) {
+        clearAdditives();
+        return;
+      }
+      additives.innerHTML = '';
+      for (const a of arr) {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td');
+        const tdPurpose = document.createElement('td');
+        tdName.textContent = (a && a.name) ? String(a.name) : '';
+        tdPurpose.textContent = (a && a.purpose) ? String(a.purpose) : '';
+        
+        // Bold the name for better readability
+        tdName.style.fontWeight = "500";
+        tdName.style.color = "var(--text-main)";
+        
+        tr.appendChild(tdName);
+        tr.appendChild(tdPurpose);
+        additives.appendChild(tr);
+      }
+    };
+
+    const renderAdditivesAlerts = (arr) => {
+      if (!Array.isArray(arr) || arr.length === 0) {
+        clearAdditivesAlerts();
+        return;
+      }
+      additivesAlerts.innerHTML = '';
+      for (const a of arr) {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td');
+        const tdRisk = document.createElement('td');
+        const tdDesc = document.createElement('td');
+
+        tdName.textContent = (a && a.name) ? String(a.name) : '';
+        tdName.style.fontWeight = '500';
+        tdName.style.color = 'var(--text-main)';
+
+        const risk = normalizeRisk(a && a.risk_level);
+        const pill = document.createElement('span');
+        pill.className = 'pill' + (risk.kind ? (' ' + risk.kind) : '');
+        pill.textContent = risk.label;
+        tdRisk.appendChild(pill);
+
+        tdDesc.textContent = (a && a.description) ? String(a.description) : '';
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdRisk);
+        tr.appendChild(tdDesc);
+        additivesAlerts.appendChild(tr);
+      }
+    };
+
+    const renderNewFormat = (j) => {
+      setText(dietaryCategory, j?.dietary_category);
+      setText(dietaryReason, j?.dietary_reason);
+      setText(overallSummary, j?.overall_summary);
+
+      // Dietary category pill: show when category is known
+      const cat = (j?.dietary_category ?? '').toString().trim();
+      if (cat) {
+        dietaryCategoryPill.style.display = 'inline-flex';
+        let kind = '';
+        if (cat === '葷食') kind = 'bad';
+        else if (cat === '未知') kind = 'warn';
+        else kind = 'ok';
+        setPill(dietaryCategoryPill, kind, cat);
+      } else {
+        dietaryCategoryPill.style.display = 'none';
+      }
+
+      renderAdditivesAlerts(j?.additives_alerts);
+
+      const n = j?.nutrition_analysis;
+      const detected = (n && typeof n.detected === 'boolean') ? n.detected : null;
+      setText(nutritionDetected, detected === null ? '' : (detected ? '已偵測到營養標示' : '未偵測到營養標示'));
+      setText(caloriesPerServing, n?.calories_per_serving);
+
+      const sod = (n && typeof n.sodium_warning === 'boolean') ? n.sodium_warning : null;
+      const sug = (n && typeof n.sugar_warning === 'boolean') ? n.sugar_warning : null;
+      if (sod === null) setPill(sodiumWarning, '', '尚無資料');
+      else setPill(sodiumWarning, sod ? 'bad' : 'ok', sod ? '偏高' : '正常');
+
+      if (sug === null) setPill(sugarWarning, '', '尚無資料');
+      else setPill(sugarWarning, sug ? 'bad' : 'ok', sug ? '偏高' : '正常');
+
+      setText(nutritionAdvice, n?.advice);
+    };
+
+    const resetAll = () => {
+      setBanner('', '');
+      ocrText.value = '';
+      clearList(ingredients);
+      clearList(allergens);
+      clearList(notes);
+      clearAdditives();
+      clearAdditivesAlerts();
+
+      setText(dietaryCategory, '');
+      dietaryCategoryPill.style.display = 'none';
+      setText(dietaryReason, '');
+      setText(overallSummary, '');
+      setText(nutritionDetected, '');
+      setText(caloriesPerServing, '');
+      setPill(sodiumWarning, '', '尚無資料');
+      setPill(sugarWarning, '', '尚無資料');
+      setText(nutritionAdvice, '');
+      previewImg.src = '';
+      previewImg.style.display = 'none';
+      previewEmpty.style.display = 'block';
+    };
+
+    file.addEventListener('change', () => {
+      resetAll();
+      const f = file.files && file.files[0];
+      btnAnalyze.disabled = !f;
+      if (!f) return;
+
+      if (!f.type.startsWith('image/')) {
+        setBanner('bad', '格式錯誤：請選擇圖片檔 (jpg, png, webp)');
+        btnAnalyze.disabled = true;
+        return;
+      }
+
+      const url = URL.createObjectURL(f);
+      previewImg.src = url;
+      previewImg.style.display = 'block';
+      previewEmpty.style.display = 'none';
+      setBanner('warn', '圖片已就緒，請點擊「上傳並分析」開始處理');
+    });
+
+    btnClear.addEventListener('click', () => {
+      file.value = '';
+      btnAnalyze.disabled = true;
+      resetAll();
+    });
+
+    btnAnalyze.addEventListener('click', async () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+
+      setBanner('warn', '正在分析圖片與成分，請稍候...');
+      setLoading(true);
+      
+      // Clear previous results visually to indicate new process
+      ocrText.value = '讀取中...';
+      
+      try {
+        const fd = new FormData();
+        fd.append('image', f);
+
+        const resp = await fetch('/analyze', { method: 'POST', body: fd });
+        let payload = null;
+        try { payload = await resp.json(); } catch (e) { payload = null; }
+
+        if (!resp.ok) {
+          const detail = payload && (payload.detail || payload.message) ? (payload.detail || payload.message) : ('HTTP ' + resp.status);
+          setBanner('bad', '分析失敗：' + detail);
+          ocrText.value = '';
+          return;
+        }
+        ocrText.value = payload?.ocr?.full_text || '(未偵測到文字)';
+
+        const j = payload?.llm?.json;
+        if (j) {
+          renderList(ingredients, j.ingredients);
+          renderList(allergens, j.allergens);
+          renderList(notes, j.notes);
+          renderAdditives(j.additives);
+          renderNewFormat(j);
+          setBanner('ok', '分析完成！已生成結構化報告');
+        } else {
+          renderList(ingredients, []);
+          renderList(allergens, []);
+          renderList(notes, []);
+          renderAdditives([]);
+          clearAdditivesAlerts();
+          const msg = payload?.llm?.raw ? String(payload.llm.raw) : 'LLM 沒有回傳可解析的 JSON';
+          setBanner('warn', '完成，但格式解析不完全：' + msg);
+        }
+      } catch (err) {
+        setBanner('bad', '系統錯誤：' + (err?.message || String(err)));
+        ocrText.value = '';
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // init
+    resetAll();
+  </script>
+</body>
+</html>
