@@ -15,6 +15,7 @@ from .utils.images import load_and_downscale, sniff_mime
 load_dotenv(".env", override=True)
 
 app = FastAPI(title="Food Ingredient OCR Demo")
+_get_ocr()  # preload OCR model
 
 
 @lru_cache(maxsize=1)
@@ -28,7 +29,6 @@ def index():
     max_upload_bytes = int(os.getenv("MAX_UPLOAD_BYTES", "10485760"))
     max_upload_mb = max(1, max_upload_bytes // (1024 * 1024))
 
-    _get_ocr()  # preload OCR model
 
     html = _load_index_html_template()
     return html.replace("__MAX_UPLOAD_MB__", str(max_upload_mb))
