@@ -3,7 +3,7 @@ from __future__ import annotations
 import imghdr
 from typing import Literal
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 AllowedMime = Literal["image/jpeg", "image/png", "image/webp"]
 
@@ -21,6 +21,13 @@ def sniff_mime(data: bytes) -> AllowedMime | None:
 
 def load_and_downscale(image_bytes: bytes, *, max_side: int = 2000) -> Image.Image:
     img = Image.open(io_bytes(image_bytes))
+    # iPhone (and many cameras) store orientation in EXIF instead of rotating pixels.
+    # If we ignore this, OCR sees sideways/upside-down text and often returns garbage.
+    try:
+        img = ImageOps.exif_transpose(img)
+    except Exception:
+        # If EXIF is missing/corrupted, keep original pixels.
+        pass
     img = img.convert("RGB")
 
     w, h = img.size
